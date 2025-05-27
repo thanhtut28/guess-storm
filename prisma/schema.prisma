@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Storm {
+  id           String   @id
+  name         String
+  year         Int
+  season       String
+  maxWindSpeed Float
+  maxCategory  Int
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  path    StormPoint[]
+  geojson Json? // Store GeoJSON data as JSON field
+
+  // Indexes for better query performance
+  @@index([year])
+  @@index([season])
+  @@index([maxCategory])
+  @@index([name])
+}
+
+model StormPoint {
+  id        String   @id @default(cuid())
+  stormId   String
+  lat       Float
+  lng       Float
+  timestamp DateTime
+  windSpeed Float?
+  pressure  Float?
+  category  Int
+  createdAt DateTime @default(now())
+
+  // Relationships
+  storm Storm @relation(fields: [stormId], references: [id], onDelete: Cascade)
+
+  // Indexes for geospatial queries
+  @@index([stormId])
+  @@index([timestamp])
+  @@index([lat, lng])
+}
+
+model Season {
+  id              String   @id @default(cuid())
+  year            Int      @unique
+  name            String
+  totalStorms     Int      @default(0)
+  majorHurricanes Int      @default(0)
+  aceIndex        Float    @default(0.0)
+  basin           String   @default("Atlantic")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([year])
+  @@index([basin])
+}
