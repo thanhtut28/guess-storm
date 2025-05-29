@@ -161,7 +161,7 @@ export default function StormDetails({ storm, className }: StormDetailsProps) {
                         </div>
                      </div>
                   </div>
-                  <div className="h-96 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                  <div className="h-[500px] rounded-lg overflow-hidden shadow-sm border border-gray-200">
                      <StormMap
                         storms={[storm]}
                         selectedStorm={storm}
@@ -266,7 +266,7 @@ export default function StormDetails({ storm, className }: StormDetailsProps) {
             <TabsContent value="timeline" className="m-4 mt-0">
                <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Storm Path</h3>
-                  <div className="max-h-96 overflow-y-auto space-y-2">
+                  <div className="max-h-[500px] overflow-y-auto space-y-2">
                      {storm.path.map((point, index) => (
                         <div
                            key={index}

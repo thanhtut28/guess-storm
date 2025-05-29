@@ -43,7 +43,6 @@ export interface StormFilters {
    name?: string;
    season?: string;
    limit?: number;
-   offset?: number;
 }
 
 export interface MapBounds {

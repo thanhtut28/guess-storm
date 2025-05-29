@@ -37,7 +37,6 @@ export const stormApi = {
       if (filters?.category) params.append("category", filters.category.toString());
       if (filters?.name) params.append("name", filters.name);
       if (filters?.limit) params.append("limit", filters.limit.toString());
-      if (filters?.offset) params.append("offset", filters.offset.toString());
 
       const url = `${API_BASE}/storms${params.toString() ? `?${params.toString()}` : ""}`;
       return fetchApi<ApiResponse<Storm[]>>(url);

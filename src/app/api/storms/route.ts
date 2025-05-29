@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
       const category = searchParams.get("category");
       const name = searchParams.get("name");
       const limit = searchParams.get("limit");
-      const offset = searchParams.get("offset");
 
       const where: Prisma.StormWhereInput = {};
 
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
             startDate: "desc",
          },
          take: limit ? parseInt(limit) : undefined,
-         skip: offset ? parseInt(offset) : undefined,
       });
 
       return NextResponse.json({

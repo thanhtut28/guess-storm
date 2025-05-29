@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Season, Storm } from "@/types/storm";
+import { Season, Storm, StormFilters } from "@/types/storm";
 import { stormApi } from "@/lib/api";
 import { getCategoryColor, getCategoryName, formatDate, formatWindSpeed } from "@/lib/utils";
 import { BarChart3, TrendingUp, Activity, Loader2, Map, Calendar, Wind, Eye } from "lucide-react";
@@ -13,11 +13,17 @@ const StormMap = dynamic(() => import("@/components/StormMap"), { ssr: false });
 
 interface SeasonAnalysisProps {
    season: Season | null;
+   filters?: StormFilters;
    onStormSelect?: (storm: Storm) => void;
    className?: string;
 }
 
-export default function SeasonAnalysis({ season, onStormSelect, className }: SeasonAnalysisProps) {
+export default function SeasonAnalysis({
+   season,
+   filters,
+   onStormSelect,
+   className,
+}: SeasonAnalysisProps) {
    const [storms, setStorms] = useState<Storm[]>([]);
    const [loading, setLoading] = useState(false);
    const [selectedStorm, setSelectedStorm] = useState<Storm | null>(null);
@@ -32,9 +38,14 @@ export default function SeasonAnalysis({ season, onStormSelect, className }: Sea
       const fetchSeasonStorms = async () => {
          try {
             setLoading(true);
+            // Create season-specific filters (exclude year since we use season's year)
+            const seasonFilters = filters ? { ...filters } : {};
+            delete seasonFilters.year;
+
             const response = await stormApi.getStorms({
                year: season.year,
                season: season.name,
+               ...seasonFilters, // Spread the remaining filters (excluding year)
             });
             setStorms(response.data);
          } catch (error) {
@@ -46,7 +57,7 @@ export default function SeasonAnalysis({ season, onStormSelect, className }: Sea
       };
 
       fetchSeasonStorms();
-   }, [season]);
+   }, [season, filters]);
 
    const handleStormSelect = (storm: Storm | null) => {
       setSelectedStorm(storm);
@@ -170,7 +181,7 @@ export default function SeasonAnalysis({ season, onStormSelect, className }: Sea
                         </div>
                      )}
                   </div>
-                  <div className="h-96 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                  <div className="h-[500px] rounded-lg overflow-hidden shadow-sm border border-gray-200">
                      {loading ? (
                         <div className="flex items-center justify-center h-full bg-gray-100">
                            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -287,7 +298,7 @@ export default function SeasonAnalysis({ season, onStormSelect, className }: Sea
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                      All Storms ({storms.length})
                   </h3>
-                  <div className="max-h-96 overflow-y-auto space-y-2">
+                  <div className="max-h-[500px] overflow-y-auto space-y-2">
                      {loading ? (
                         <div className="flex items-center justify-center py-8">
                            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
