@@ -17,8 +17,21 @@ export default function StormPage() {
    const [storm, setStorm] = useState<Storm | null>(null);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
+   const [isInitialLoaded, setIsInitialLoaded] = useState(false);
 
    const stormId = params.id as string;
+
+   useEffect(() => {
+      const realTimeStorm = localStorage.getItem("realtimeStorm");
+      if (stormId && realTimeStorm) {
+         const realTimeStormData = JSON.parse(realTimeStorm);
+         if (realTimeStormData.id === stormId) {
+            setStorm(realTimeStormData);
+            setIsInitialLoaded(true);
+            setLoading(false);
+         }
+      }
+   }, [stormId]);
 
    useEffect(() => {
       const fetchStorm = async () => {
@@ -26,9 +39,28 @@ export default function StormPage() {
 
          setLoading(true);
          setError(null);
+
          try {
-            const response = await stormApi.getStorm(stormId);
-            setStorm(response.data);
+            // First check if this is a real-time storm stored in localStorage
+            const realtimeStormData = localStorage.getItem("realtimeStorm");
+            if (realtimeStormData) {
+               // const realtimeStorm = JSON.parse(realtimeStormData);
+               // if (realtimeStorm.id === stormId) {
+               //    setStorm(realtimeStorm);
+               //    // Clear the localStorage data after using it
+               //    localStorage.removeItem("realtimeStorm");
+               //    setLoading(false);
+               //    return;
+               // }
+               return;
+            }
+
+            // If not a real-time storm, fetch from API
+            if (!isInitialLoaded) {
+               const response = await stormApi.getStorm(stormId);
+               setStorm(response.data);
+               setIsInitialLoaded(true);
+            }
          } catch (err) {
             console.error("Error fetching storm:", err);
             setError("Failed to load storm data. Please try again.");
@@ -38,7 +70,7 @@ export default function StormPage() {
       };
 
       fetchStorm();
-   }, [stormId]);
+   }, [stormId, isInitialLoaded]);
 
    const handleRetry = () => {
       if (stormId) {

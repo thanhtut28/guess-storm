@@ -25,15 +25,54 @@ import {
    X,
    Command,
    ChevronDown,
+   Activity,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRouter } from "next/navigation";
 
 // Dynamically import components that use Leaflet
 const StormMap = dynamic(() => import("@/components/StormMap"), { ssr: false });
+const RealtimeStormMap = dynamic(() => import("@/components/RealtimeStormMap"), { ssr: false });
 const SeasonAnalysis = dynamic(() => import("@/components/SeasonAnalysis"), { ssr: false });
 
-type ViewMode = "overview" | "season";
+type ViewMode = "realtime" | "season";
+
+// Real-time prediction data types
+interface RealtimePredictionPoint {
+   lat: number;
+   lng: number;
+   timestamp: string;
+   windSpeed: number | null;
+   pressure: number | null;
+   category: number;
+}
+
+interface RealtimePrediction {
+   id: string;
+   name: string;
+   year: number;
+   season: string;
+   maxWindSpeed: number;
+   maxCategory: number;
+   startDate: string;
+   endDate: string;
+   path: RealtimePredictionPoint[];
+   geojson: {
+      type: "Feature";
+      properties: {
+         name: string;
+         category: number;
+      };
+      geometry: {
+         type: "LineString";
+         coordinates: number[][];
+      };
+   };
+}
+
+interface RealtimeData {
+   predictions: RealtimePrediction[];
+}
 
 // Autocomplete Search Component
 function AutocompleteSearch({
@@ -247,9 +286,12 @@ function AutocompleteSearch({
 
 export default function StormDashboard() {
    const router = useRouter();
-   const [viewMode, setViewMode] = useState<ViewMode>("overview");
+   const [viewMode, setViewMode] = useState<ViewMode>("realtime");
    const [storms, setStorms] = useState<Storm[]>([]);
    const [seasons, setSeasons] = useState<Season[]>([]);
+   const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null);
+   const [realtimeLoading, setRealtimeLoading] = useState(true);
+   const [realtimeError, setRealtimeError] = useState<string | null>(null);
    const [selectedStorm, setSelectedStorm] = useState<Storm | null>(null);
    const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
    const [loading, setLoading] = useState(true);
@@ -290,33 +332,39 @@ export default function StormDashboard() {
       }
    };
 
- useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
+   // Fetch real-time prediction data
+   useEffect(() => {
+      const controller = new AbortController();
+      const signal = controller.signal;
 
-    const fetchRealtimeStorm = async () => {
-      try {
-        const response = await fetch('http://127.0.0.1:8000/predict-realtime', { signal });
-        if (!response.ok) {
-          throw new Error('Fetch failed');
-        }
-        const data = await response.json();
-        console.log('realtime', data)
+      const fetchRealtimeStorm = async () => {
+         try {
+            setRealtimeLoading(true);
+            setRealtimeError(null);
+            const response = await fetch("http://127.0.0.1:8000/predict-realtime", { signal });
+            if (!response.ok) {
+               throw new Error("Failed to fetch real-time prediction data");
+            }
+            const data: RealtimeData = await response.json();
+            console.log("Real-time prediction data:", data);
+            setRealtimeData(data);
+         } catch (error: unknown) {
+            if (error instanceof Error && error.name !== "AbortError") {
+               console.error("Error fetching real-time data:", error);
+               setRealtimeError("Failed to load real-time prediction data. Please try again.");
+            }
+         } finally {
+            setRealtimeLoading(false);
+         }
+      };
 
-      } catch (error) {
-         console.error(error)
-      } finally {
-        setLoading(false);
-      }
-    };
+      fetchRealtimeStorm();
 
-    fetchRealtimeStorm();
-
-    // Cleanup on unmount
-    return () => {
-      controller.abort(); // cancel the fetch
-    };
-  }, []);
+      // Cleanup on unmount
+      return () => {
+         controller.abort();
+      };
+   }, []);
 
    useEffect(() => {
       fetchData(filters);
@@ -332,7 +380,17 @@ export default function StormDashboard() {
    }, [debouncedSearchTerm]);
 
    const handleStormSelect = (storm: Storm) => {
+      console.log("Storm selected:", storm.id, storm.name);
       setSelectedStorm(storm);
+
+      // Check if this is a real-time storm (dummy data)
+      const isRealtimeStorm = realtimeData?.predictions.some(p => p.id === storm.id);
+
+      if (isRealtimeStorm) {
+         // For real-time storms, store data in localStorage temporarily
+         localStorage.setItem("realtimeStorm", JSON.stringify(storm));
+      }
+
       // Navigate to individual storm page
       router.push(`/storm/${storm.id}`);
    };
@@ -370,16 +428,39 @@ export default function StormDashboard() {
       setSearchTerm("");
    };
 
+   // Convert real-time predictions to Storm format for map compatibility
+   const convertRealtimeToStorms = (realtimeData: RealtimeData): Storm[] => {
+      return realtimeData.predictions.map(prediction => ({
+         id: prediction.id,
+         name: prediction.name,
+         year: prediction.year,
+         season: prediction.season,
+         maxWindSpeed: prediction.maxWindSpeed,
+         maxCategory: prediction.maxCategory,
+         startDate: prediction.startDate,
+         endDate: prediction.endDate,
+         path: prediction.path.map(point => ({
+            lat: point.lat,
+            lng: point.lng,
+            timestamp: point.timestamp,
+            windSpeed: point.windSpeed,
+            pressure: point.pressure,
+            category: point.category,
+         })),
+         geojson: prediction.geojson,
+      }));
+   };
+
    // Get available years from seasons
    const availableYears = seasons
       .map(season => season.year.toString())
       .sort((a, b) => parseInt(b) - parseInt(a));
 
-   // Check if search is active
+   // Check if search is active (only for season analysis)
    const isSearchActive = searchTerm.length > 0;
    const hasActiveFilters = filters.year || filters.category || filters.name;
 
-   if (error) {
+   if (error && viewMode === "season") {
       return (
          <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 text-center">
             <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
@@ -399,43 +480,60 @@ export default function StormDashboard() {
             <div className="container mx-auto">
                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <h1 className="text-2xl font-bold text-gray-800">StormTrack Pro</h1>
-                  <div className="flex items-center gap-3">
-                     {/* Enhanced Search Input */}
-                     <AutocompleteSearch
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        onStormSelect={handleStormSelect}
-                        placeholder="Search storm by name..."
-                        className="w-full sm:w-64"
-                     />
-                     <Select
-                        onValueChange={handleSeasonSelect}
-                        value={filters.year?.toString() || "all"}
-                     >
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                           <SelectValue placeholder="All Years" />
-                        </SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value="all">All Years</SelectItem>
-                           {availableYears.map(year => (
-                              <SelectItem key={year} value={year}>
-                                 {year} Season
-                              </SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
-                     <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setShowFilters(!showFilters)}
-                     >
-                        <SlidersHorizontal className="h-4 w-4" />
-                     </Button>
-                  </div>
+
+                  {/* Show filters only for season analysis */}
+                  {viewMode === "season" && (
+                     <div className="flex items-center gap-3">
+                        {/* Enhanced Search Input */}
+                        <AutocompleteSearch
+                           value={searchTerm}
+                           onChange={setSearchTerm}
+                           onStormSelect={handleStormSelect}
+                           placeholder="Search storm by name..."
+                           className="w-full sm:w-64"
+                        />
+                        <Select
+                           onValueChange={handleSeasonSelect}
+                           value={filters.year?.toString() || "all"}
+                        >
+                           <SelectTrigger className="w-full sm:w-[180px]">
+                              <SelectValue placeholder="All Years" />
+                           </SelectTrigger>
+                           <SelectContent>
+                              <SelectItem value="all">All Years</SelectItem>
+                              {availableYears.map(year => (
+                                 <SelectItem key={year} value={year}>
+                                    {year} Season
+                                 </SelectItem>
+                              ))}
+                           </SelectContent>
+                        </Select>
+                        <Button
+                           variant="outline"
+                           size="icon"
+                           onClick={() => setShowFilters(!showFilters)}
+                        >
+                           <SlidersHorizontal className="h-4 w-4" />
+                        </Button>
+                     </div>
+                  )}
+
+                  {/* Real-time status indicator */}
+                  {viewMode === "realtime" && (
+                     <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200">
+                           <Activity className="w-4 h-4 animate-pulse" />
+                           <span className="text-sm font-medium">Live Prediction</span>
+                        </div>
+                        {realtimeLoading && (
+                           <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                        )}
+                     </div>
+                  )}
                </div>
 
-               {/* Active filters indicator */}
-               {hasActiveFilters && (
+               {/* Active filters indicator - only for season analysis */}
+               {viewMode === "season" && hasActiveFilters && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                      <span className="text-sm text-gray-500">Active filters:</span>
                      {filters.name && (
@@ -473,7 +571,7 @@ export default function StormDashboard() {
                   </div>
                )}
 
-               {showFilters && (
+               {viewMode === "season" && showFilters && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
@@ -562,10 +660,10 @@ export default function StormDashboard() {
                <div className="container mx-auto">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 py-2 rounded-xl">
                      <TabsTrigger
-                        value="overview"
+                        value="realtime"
                         className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
                      >
-                        Storm Overview
+                        Real-time Prediction
                      </TabsTrigger>
                      <TabsTrigger
                         value="season"
@@ -584,7 +682,61 @@ export default function StormDashboard() {
                      </div>
                   }
                >
-                  <TabsContent value="overview" className="flex-1 mt-0 overflow-hidden">
+                  <TabsContent value="realtime" className="flex-1 mt-0 overflow-hidden">
+                     <div className="h-full w-full relative">
+                        {realtimeError ? (
+                           <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-white/90 backdrop-blur-sm p-8 rounded-lg shadow-md border border-gray-200 text-center">
+                                 <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                    Connection Error
+                                 </h3>
+                                 <p className="text-gray-500 mb-4">{realtimeError}</p>
+                                 <Button variant="outline" onClick={() => window.location.reload()}>
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Retry
+                                 </Button>
+                              </div>
+                           </div>
+                        ) : realtimeLoading && !realtimeData ? (
+                           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                              <div className="text-center">
+                                 <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+                                 <p className="text-gray-600">Loading real-time prediction...</p>
+                              </div>
+                           </div>
+                        ) : realtimeData ? (
+                           <RealtimeStormMap
+                              storms={convertRealtimeToStorms(realtimeData)}
+                              selectedStorm={selectedStorm}
+                              onStormSelect={handleStormSelect}
+                              className="h-full w-full rounded-lg shadow"
+                           />
+                        ) : null}
+
+                        {/* Real-time prediction count indicator */}
+                        {realtimeData && !realtimeLoading && (
+                           <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md border border-gray-200">
+                              <span className="text-sm font-medium text-gray-700">
+                                 {realtimeData.predictions.length} active prediction
+                                 {realtimeData.predictions.length !== 1 ? "s" : ""}
+                              </span>
+                           </div>
+                        )}
+
+                        {/* Last updated indicator */}
+                        {realtimeData && (
+                           <div className="absolute top-4 left-4 bg-green-50/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md border border-green-200">
+                              <div className="flex items-center gap-2 text-green-700">
+                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                 <span className="text-sm font-medium">Live</span>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  </TabsContent>
+
+                  <TabsContent value="season" className="flex-1 mt-0 overflow-hidden">
                      <div className="h-full w-full relative">
                         {loading && storms.length === 0 ? (
                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
@@ -627,20 +779,16 @@ export default function StormDashboard() {
                      </div>
                   </TabsContent>
 
-                  <TabsContent value="season" className="flex-1 mt-0 overflow-y-auto">
-                     {selectedSeason ? (
+                  {selectedSeason && viewMode === "season" && (
+                     <div className="mt-4">
                         <SeasonAnalysis
                            season={selectedSeason}
                            filters={filters}
                            onStormSelect={handleStormSelect}
                            className="container mx-auto p-4"
                         />
-                     ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500">
-                           Select a season to view analysis.
-                        </div>
-                     )}
-                  </TabsContent>
+                     </div>
+                  )}
                </Suspense>
             </Tabs>
          </main>

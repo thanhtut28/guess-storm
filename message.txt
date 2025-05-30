@@ -1,0 +1,189 @@
+{
+  "predictions": [
+    {
+      "id": "ep012025",
+      "name": "ALVIN",
+      "year": 2025,
+      "season": "2025 EAST_PACIFIC",
+      "maxWindSpeed": 50,
+      "maxCategory": 0,
+      "startDate": "2025-05-26",
+      "endDate": "2025-05-30",
+      "path": [
+        {
+          "lat": 10,
+          "lng": -96.4,
+          "timestamp": "2025-05-26T00:00:00Z",
+          "windSpeed": 20,
+          "pressure": null,
+          "category": 0
+        },
+        {
+          "lat": 10.4,
+          "lng": -97.3,
+          "timestamp": "2025-05-26T06:00:00Z",
+          "windSpeed": 20,
+          "pressure": null,
+          "category": 0
+        },
+        {
+          "lat": 10.8,
+          "lng": -98,
+          "timestamp": "2025-05-26T12:00:00Z",
+          "windSpeed": 20,
+          "pressure": null,
+          "category": 0
+        },
+        {
+          "lat": 11.2,
+          "lng": -98.7,
+          "timestamp": "2025-05-26T18:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1009,
+          "category": 0
+        },
+        {
+          "lat": 11.3,
+          "lng": -99.5,
+          "timestamp": "2025-05-27T00:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1009,
+          "category": 0
+        },
+        {
+          "lat": 11.4,
+          "lng": -100.2,
+          "timestamp": "2025-05-27T06:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1009,
+          "category": 0
+        },
+        {
+          "lat": 12.1,
+          "lng": -101.2,
+          "timestamp": "2025-05-27T12:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1009,
+          "category": 0
+        },
+        {
+          "lat": 12.7,
+          "lng": -101.5,
+          "timestamp": "2025-05-27T18:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1008,
+          "category": 0
+        },
+        {
+          "lat": 12.8,
+          "lng": -102.2,
+          "timestamp": "2025-05-28T00:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1008,
+          "category": 0
+        },
+        {
+          "lat": 12.9,
+          "lng": -103.1,
+          "timestamp": "2025-05-28T06:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1008,
+          "category": 0
+        },
+        {
+          "lat": 12.4,
+          "lng": -103.7,
+          "timestamp": "2025-05-28T12:00:00Z",
+          "windSpeed": 20,
+          "pressure": 1008,
+          "category": 0
+        },
+        {
+          "lat": 11.5,
+          "lng": -104.4,
+          "timestamp": "2025-05-28T18:00:00Z",
+          "windSpeed": 30,
+          "pressure": 1006,
+          "category": 0
+        },
+        {
+          "lat": 12.4,
+          "lng": -104.8,
+          "timestamp": "2025-05-29T00:00:00Z",
+          "windSpeed": 30,
+          "pressure": 1006,
+          "category": 0
+        },
+        {
+          "lat": 13,
+          "lng": -105.6,
+          "timestamp": "2025-05-29T06:00:00Z",
+          "windSpeed": 30,
+          "pressure": 1006,
+          "category": 0
+        },
+        {
+          "lat": 13.7,
+          "lng": -106.2,
+          "timestamp": "2025-05-29T12:00:00Z",
+          "windSpeed": 35,
+          "pressure": 1005,
+          "category": 0
+        },
+        {
+          "lat": 14.6,
+          "lng": -106.8,
+          "timestamp": "2025-05-29T18:00:00Z",
+          "windSpeed": 45,
+          "pressure": 1002,
+          "category": 0
+        },
+        {
+          "lat": 15.5,
+          "lng": -107.6,
+          "timestamp": "2025-05-30T00:00:00Z",
+          "windSpeed": 50,
+          "pressure": 999,
+          "category": 0
+        },
+        {
+          "lat": 15.3035449981689,
+          "lng": -107.516021728516,
+          "timestamp": "2025-05-30T06:00:00Z",
+          "windSpeed": null,
+          "pressure": null,
+          "category": 0
+        }
+      ],
+      "geojson": {
+        "type": "Feature",
+        "properties": {
+          "name": "ALVIN",
+          "category": 0
+        },
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-96.4, 10],
+            [-97.3, 10.4],
+            [-98, 10.8],
+            [-98.7, 11.2],
+            [-99.5, 11.3],
+            [-100.2, 11.4],
+            [-101.2, 12.1],
+            [-101.5, 12.7],
+            [-102.2, 12.8],
+            [-103.1, 12.9],
+            [-103.7, 12.4],
+            [-104.4, 11.5],
+            [-104.8, 12.4],
+            [-105.6, 13],
+            [-106.2, 13.7],
+            [-106.8, 14.6],
+            [-107.6, 15.5]
+          ]
+        }
+      }
+    }
+  ]
+}
