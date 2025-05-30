@@ -21,17 +21,17 @@ export default function StormPage() {
 
    const stormId = params.id as string;
 
-   useEffect(() => {
-      const realTimeStorm = localStorage.getItem("realtimeStorm");
-      if (stormId && realTimeStorm) {
-         const realTimeStormData = JSON.parse(realTimeStorm);
-         if (realTimeStormData.id === stormId) {
-            setStorm(realTimeStormData);
-            setIsInitialLoaded(true);
-            setLoading(false);
-         }
-      }
-   }, [stormId]);
+   // useEffect(() => {
+   //    const realTimeStorm = localStorage.getItem("realtimeStorm");
+   //    if (stormId && realTimeStorm) {
+   //       const realTimeStormData = JSON.parse(realTimeStorm);
+   //       if (realTimeStormData.id === stormId) {
+   //          setStorm(realTimeStormData);
+   //          setIsInitialLoaded(true);
+   //          setLoading(false);
+   //       }
+   //    }
+   // }, [stormId]);
 
    useEffect(() => {
       const fetchStorm = async () => {
@@ -43,15 +43,12 @@ export default function StormPage() {
          try {
             // First check if this is a real-time storm stored in localStorage
             const realtimeStormData = localStorage.getItem("realtimeStorm");
-            if (realtimeStormData) {
-               // const realtimeStorm = JSON.parse(realtimeStormData);
-               // if (realtimeStorm.id === stormId) {
-               //    setStorm(realtimeStorm);
-               //    // Clear the localStorage data after using it
-               //    localStorage.removeItem("realtimeStorm");
-               //    setLoading(false);
-               //    return;
-               // }
+            const realtimeStorm = realtimeStormData ? JSON.parse(realtimeStormData) : null;
+            if (realtimeStorm && realtimeStorm.id === stormId) {
+               setStorm(realtimeStorm);
+               // Clear the localStorage data after using it
+               // localStorage.removeItem("realtimeStorm");
+               setLoading(false);
                return;
             }
 
