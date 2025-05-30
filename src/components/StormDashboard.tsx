@@ -255,7 +255,7 @@ export default function StormDashboard() {
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
    const [filters, setFilters] = useState<StormFilters>({
-      limit: 200, // Increased default limit since we removed pagination
+      limit: 20, // Increased default limit since we removed pagination
    });
    const [searchTerm, setSearchTerm] = useState<string>("");
    const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -289,6 +289,34 @@ export default function StormDashboard() {
          setLoading(false);
       }
    };
+
+ useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const fetchRealtimeStorm = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/predict-realtime', { signal });
+        if (!response.ok) {
+          throw new Error('Fetch failed');
+        }
+        const data = await response.json();
+        console.log('realtime', data)
+
+      } catch (error) {
+         console.error(error)
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRealtimeStorm();
+
+    // Cleanup on unmount
+    return () => {
+      controller.abort(); // cancel the fetch
+    };
+  }, []);
 
    useEffect(() => {
       fetchData(filters);
